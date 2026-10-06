@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512.png'],
       manifest: {
         name: 'StarWatch — Pocket Stargazing',
         short_name: 'StarWatch',
@@ -32,7 +32,7 @@ export default defineConfig({
             purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'pwa-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
