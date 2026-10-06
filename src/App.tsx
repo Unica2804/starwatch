@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { playNarration } from './audio/player'
 import { useCompass } from './sensors/useCompass'
 import { useLocation } from './sensors/useLocation'
 import catalog from './sky/catalog.json'
 import { visibleStars, type Star } from './sky/engine'
+import { effectiveHeading, shouldOfferManual } from './ui/heading'
 import { PocketMode } from './ui/PocketMode'
 import { SkyCanvas } from './ui/SkyCanvas'
 
@@ -20,12 +21,25 @@ export default function App() {
   const loc = useLocation()
   const compass = useCompass(loc.lat, loc.lon)
   const [pocket, setPocket] = useState(false)
-  const [pitch] = useState(45)
+  const [pitch, setPitch] = useState(45)
+  const [manual, setManual] = useState<number | null>(null)
+  const [waitedMs, setWaitedMs] = useState(0)
+
+  // Grace timer: offer manual look-around if sensors stay silent.
+  useEffect(() => {
+    if (loc.lat === null || compass.live) return
+    const t0 = Date.now()
+    const id = window.setInterval(() => setWaitedMs(Date.now() - t0), 1000)
+    return () => window.clearInterval(id)
+  }, [loc.lat, compass.live])
 
   const positioned = useMemo(() => {
     if (loc.lat === null || loc.lon === null) return []
     return visibleStars(catalog.stars as Star[], { latitude: loc.lat, longitude: loc.lon }, new Date())
   }, [loc.lat, loc.lon])
+
+  const heading = effectiveHeading(compass.heading, manual)
+  const offerManual = shouldOfferManual(compass.live, compass.supported, waitedMs)
 
   const top = positioned[0] ?? null
   const narration = top
@@ -60,7 +74,7 @@ export default function App() {
     return (
       <main className="bg-night-bg">
         <PocketMode
-          heading={compass.heading}
+          heading={heading}
           topConstellation={top?.constellation ?? null}
           narration={narration}
           audioUrl={null}
@@ -82,16 +96,71 @@ export default function App() {
       <header className="px-4 pt-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-night-red">StarWatch</h1>
         <p className="text-xs opacity-70">
-          {compass.heading === null ? 'Waiting for compass…' : `${Math.round(compass.heading)}° true`}
+          {heading === null
+            ? (compass.live ? 'Waiting for compass…' : 'Move or tilt your phone…')
+            : `${Math.round(heading)}°${manual !== null ? ' manual' : ' true'}`}
           {compass.recalibrate ? ' · figure-8 recal' : ''}
         </p>
       </header>
+      {compass.needsPermission && (
+        <button
+          type="button"
+          onClick={() => { void compass.enableMotion() }}
+          className="mx-4 mt-2 min-h-touch rounded-xl bg-night-red text-black font-bold"
+        >
+          Enable motion sensors
+        </button>
+      )}
+      {offerManual && manual === null && (
+        <div className="mx-4 mt-2 rounded-xl border-2 border-night-red p-4">
+          <p className="text-sm text-center">
+            {!compass.supported
+              ? 'No compass on this device — explore by hand instead.'
+              : 'Compass is quiet — explore by hand instead.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setManual(180)}
+            className="mt-3 min-h-touch w-full rounded-xl bg-night-red text-black font-bold"
+          >
+            Look around manually
+          </button>
+        </div>
+      )}
       <SkyCanvas
         stars={positioned}
         lines={catalog.lines}
-        heading={compass.heading ?? 180}
+        heading={heading ?? 180}
         pitch={pitch}
       />
+      {manual !== null && (
+        <div className="px-4 flex flex-col gap-2">
+          <label className="text-xs opacity-70">
+            Heading {Math.round(manual)}°
+            <input
+              type="range"
+              min={0}
+              max={359}
+              value={Math.round(manual)}
+              onChange={(e) => setManual(Number(e.target.value))}
+              className="w-full min-h-touch"
+              aria-label="Manual heading"
+            />
+          </label>
+          <label className="text-xs opacity-70">
+            Tilt {pitch}°
+            <input
+              type="range"
+              min={0}
+              max={90}
+              value={pitch}
+              onChange={(e) => setPitch(Number(e.target.value))}
+              className="w-full min-h-touch"
+              aria-label="Manual tilt"
+            />
+          </label>
+        </div>
+      )}
       <p className="px-4 py-2 text-center text-sm">
         {top ? `${top.name} · ${top.constellation ?? 'deep sky'}` : 'No bright stars in view — tilt up.'}
       </p>

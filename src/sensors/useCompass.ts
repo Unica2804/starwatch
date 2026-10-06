@@ -19,6 +19,12 @@ export interface CompassState {
   interference: boolean
   recalibrate: boolean
   supported: boolean
+  /** true once ≥1 orientation event arrived (vs. waiting for movement) */
+  live: boolean
+  /** true on iOS where motion needs an explicit user-granted permission */
+  needsPermission: boolean
+  /** ask for iOS motion permission. No-op elsewhere. Resolves granted? */
+  enableMotion: () => Promise<boolean>
 }
 
 const ALPHA = 0.18 // dynamic low-pass: responsive yet stable while pointing
@@ -28,6 +34,8 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
   const [mag, setMag] = useState<number | null>(null)
   const [fieldUt, setFieldUt] = useState<number | null>(null)
   const [supported, setSupported] = useState(true)
+  const [live, setLive] = useState(false)
+  const [needsPermission, setNeedsPermission] = useState(false)
   const smooth = useRef<number | null>(null)
 
   useEffect(() => {
@@ -48,7 +56,10 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
         smooth.current === null
           ? magnetic
           : lowPassAngle(smooth.current, magnetic, ALPHA)
-      setMag(smooth.current)
+      if (!dead) {
+        setLive(true)
+        setMag(smooth.current)
+      }
     }
     const onMag = (e: Event): void => {
       const m = e as Event & { x?: number; y?: number; z?: number }
@@ -57,11 +68,16 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
       }
     }
     if (typeof window === 'undefined') return
-    if (
-      typeof DeviceOrientationEvent === 'undefined' &&
-      typeof window.DeviceOrientationEvent === 'undefined'
-    ) {
+    const DOE = window.DeviceOrientationEvent as unknown as
+      | { requestPermission?: () => Promise<string> }
+      | undefined
+    if (typeof DOE === 'undefined') {
       setSupported(false)
+      return
+    }
+    if (typeof DOE.requestPermission === 'function') {
+      // iOS: motion events stay silent until the user grants permission.
+      setNeedsPermission(true)
       return
     }
     window.addEventListener('deviceorientationabsolute', onOrient as EventListener, true)
@@ -73,12 +89,33 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
       window.removeEventListener('deviceorientation', onOrient as EventListener, true)
       window.removeEventListener('magnetometer', onMag as EventListener, true)
     }
-  }, [lat, lon])
+  }, [lat, lon, needsPermission])
 
   const dec = lat !== null && lon !== null ? estimateDeclination(lat, lon) : null
   const heading =
     mag !== null && dec !== null ? trueHeading(mag, dec) : mag
   const status = fieldUt === null ? 'ok' : fieldStatus(fieldUt)
+
+  const enableMotion = async (): Promise<boolean> => {
+    try {
+      const DOE = window.DeviceOrientationEvent as unknown as
+        | { requestPermission?: () => Promise<string> }
+        | undefined
+      if (DOE && typeof DOE.requestPermission === 'function') {
+        const res = await DOE.requestPermission()
+        if (res === 'granted') {
+          setNeedsPermission(false)
+          return true
+        }
+        return false
+      }
+      setNeedsPermission(false)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   return {
     heading,
     magnetic: mag,
@@ -86,6 +123,9 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
     fieldUt,
     interference: status === 'interference',
     recalibrate: needsRecalibration(status, null),
-    supported
+    supported,
+    live,
+    needsPermission,
+    enableMotion
   }
 }
