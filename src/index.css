@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0a0000;
+  color: #ffd9d4;
+  margin: 0;
+  overscroll-behavior: none;
+}
+
+/* Night-vision: no blue/white light. Glove-friendly 56px targets. */
+button,
+a {
+  min-height: 56px;
+  min-width: 56px;
+}
+
+canvas {
+  touch-action: none;
+}
