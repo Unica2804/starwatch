@@ -43,6 +43,7 @@ export default defineConfig({
         // App shell offline-first. Model shards + audio come from
         // IndexedDB/HF cache, never bundled (Render 25MB limit).
         globPatterns: ['**/*.{js,css,html,svg,json}'],
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.endsWith('.mp3'),

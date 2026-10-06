@@ -3,7 +3,7 @@
 Main rules. Read this first, every run. Details live in the linked files.
 
 ## Project
-Offline-only pocket stargazing PWA for DEV `Hacktoberfest Open-Source AI Challenge: Week 1` (ID `79`). Point phone → compass+gyro alt-az → what should be there → fine-tuned open model narrates → PocketMode audio, phone in pocket.
+Offline-only pocket stargazing PWA for DEV `Hacktoberfest Open-Source AI Challenge: Week 1` (ID `79`). Open camera → point at sky → fine-tuned open model reads the frame + compass/gyro alt-az + GPS → names the star/constellation on screen. Voice narration deferred to later.
 
 ## Decisions (locked)
 - **Language:** TypeScript strict. See `ARCHITECTURE.md`.

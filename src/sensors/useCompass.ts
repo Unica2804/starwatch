@@ -3,8 +3,10 @@ import {
   estimateDeclination,
   fieldMagnitude,
   fieldStatus,
+  lowPass,
   lowPassAngle,
   needsRecalibration,
+  pitchFromBeta,
   trueHeading
 } from './fusion'
 
@@ -20,7 +22,8 @@ export interface CompassState {
   recalibrate: boolean
   supported: boolean
   /** true once ≥1 orientation event arrived (vs. waiting for movement) */
-  live: boolean
+  live: boolean  /** rear-camera altitude from gyro tilt, deg [0,90], smoothed */
+  pitch: number | null
   /** true on iOS where motion needs an explicit user-granted permission */
   needsPermission: boolean
   /** ask for iOS motion permission. No-op elsewhere. Resolves granted? */
@@ -32,11 +35,13 @@ const ALPHA = 0.18 // dynamic low-pass: responsive yet stable while pointing
 /** True-north compass from DeviceOrientation + magnetometer. Android-first. */
 export function useCompass(lat: number | null, lon: number | null): CompassState {
   const [mag, setMag] = useState<number | null>(null)
+  const [pitch, setPitch] = useState<number | null>(null)
   const [fieldUt, setFieldUt] = useState<number | null>(null)
   const [supported, setSupported] = useState(true)
   const [live, setLive] = useState(false)
   const [needsPermission, setNeedsPermission] = useState(false)
   const smooth = useRef<number | null>(null)
+  const smoothPitch = useRef<number | null>(null)
 
   useEffect(() => {
     let dead = false
@@ -59,6 +64,12 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
       if (!dead) {
         setLive(true)
         setMag(smooth.current)
+        const p = pitchFromBeta(typeof e.beta === 'number' ? e.beta : null)
+        if (p !== null) {
+          smoothPitch.current =
+            smoothPitch.current === null ? p : lowPass(smoothPitch.current, p, ALPHA)
+          setPitch(smoothPitch.current)
+        }
       }
     }
     const onMag = (e: Event): void => {
@@ -118,6 +129,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
 
   return {
     heading,
+    pitch,
     magnetic: mag,
     declination: dec,
     fieldUt,

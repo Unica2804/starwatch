@@ -79,3 +79,13 @@ export function isValidGps(lat: number, lon: number): boolean {
     !(lat === 0 && lon === 0) // unfixed receiver null-island
   )
 }
+
+/**
+ * Rear-camera altitude from DeviceOrientation beta (front-back tilt, deg).
+ * Phone upright (beta 90) → camera on the horizon (alt 0).
+ * Tilted back (beta 135) → camera 45° up. Clamped to [0,90].
+ */
+export function pitchFromBeta(beta: number | null): number | null {
+  if (beta === null || !Number.isFinite(beta)) return null
+  return Math.min(90, Math.max(0, beta - 90))
+}

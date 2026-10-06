@@ -7,6 +7,7 @@ import {
   lowPass,
   lowPassAngle,
   needsRecalibration,
+  pitchFromBeta,
   trueHeading
 } from './fusion'
 
@@ -71,5 +72,19 @@ describe('gps validation', () => {
     expect(isValidGps(91, 0)).toBe(false)
     expect(isValidGps(0, 181)).toBe(false)
     expect(isValidGps(NaN, 72)).toBe(false)
+  })
+})
+
+describe('camera pitch', () => {
+  it('maps upright phone to horizon, tilt-back to sky', () => {
+    expect(pitchFromBeta(90)).toBe(0)
+    expect(pitchFromBeta(135)).toBe(45)
+    expect(pitchFromBeta(180)).toBe(90)
+  })
+  it('clamps face-down / over-tilt and null beta', () => {
+    expect(pitchFromBeta(45)).toBe(0)
+    expect(pitchFromBeta(270)).toBe(90)
+    expect(pitchFromBeta(null)).toBe(null)
+    expect(pitchFromBeta(NaN)).toBe(null)
   })
 })
