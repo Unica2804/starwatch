@@ -42,6 +42,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
   const [needsPermission, setNeedsPermission] = useState(false)
   const smooth = useRef<number | null>(null)
   const smoothPitch = useRef<number | null>(null)
+  const permissionAsked = useRef(false)
 
   useEffect(() => {
     let dead = false
@@ -86,7 +87,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
       setSupported(false)
       return
     }
-    if (typeof DOE.requestPermission === 'function') {
+    if (typeof DOE.requestPermission === 'function' && !permissionAsked.current) {
       // iOS: motion events stay silent until the user grants permission.
       setNeedsPermission(true)
       return
@@ -115,6 +116,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
       if (DOE && typeof DOE.requestPermission === 'function') {
         const res = await DOE.requestPermission()
         if (res === 'granted') {
+          permissionAsked.current = true
           setNeedsPermission(false)
           return true
         }
