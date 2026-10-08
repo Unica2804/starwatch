@@ -22,7 +22,9 @@ export interface CompassState {
   recalibrate: boolean
   supported: boolean
   /** true once ≥1 orientation event arrived (vs. waiting for movement) */
-  live: boolean  /** rear-camera altitude from gyro tilt, deg [0,90], smoothed */
+  live: boolean
+  /** true once any orientation event arrived, even an empty one (blocked sensors announce themselves with nulls) */
+  heard: boolean  /** rear-camera altitude from gyro tilt, deg [0,90], smoothed */
   pitch: number | null
   /** true on iOS where motion needs an explicit user-granted permission */
   needsPermission: boolean
@@ -39,6 +41,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
   const [fieldUt, setFieldUt] = useState<number | null>(null)
   const [supported, setSupported] = useState(true)
   const [live, setLive] = useState(false)
+  const [heard, setHeard] = useState(false)
   const [needsPermission, setNeedsPermission] = useState(false)
   const smooth = useRef<number | null>(null)
   const smoothPitch = useRef<number | null>(null)
@@ -63,6 +66,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
         dec
       )
       if (dead) return
+      setHeard(true)
       // Gyro tilt is valid from any event — update it independently so the
       // camera always knows where it points, even without a magnetometer.
       if (reading.pitch !== null) {
@@ -148,6 +152,7 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
     recalibrate: needsRecalibration(status, null),
     supported,
     live,
+    heard,
     needsPermission,
     enableMotion
   }

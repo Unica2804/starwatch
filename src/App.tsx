@@ -125,9 +125,11 @@ export default function App() {
           {offerManual && manual === null && (
             <div className="mx-4 mt-2 rounded-xl border-2 border-night-red p-4">
               <p className="text-sm text-center">
-                {!compass.supported
-                  ? 'No compass on this device — explore by hand instead.'
-                  : 'Compass is quiet — explore by hand instead.'}
+                {compass.heard && !compass.live
+                  ? 'Your browser is blocking motion sensors — in Brave: address-bar lock → Site settings → Motion sensors → Allow, then reload.'
+                  : !compass.supported
+                    ? 'No compass on this device — explore by hand instead.'
+                    : 'Compass is quiet — explore by hand instead.'}
               </p>
               <button
                 type="button"
