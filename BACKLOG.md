@@ -23,6 +23,6 @@
 - [ ] Torch toggle for dark-sky focusing (needs capability check)
 
 ## P1 — prove + submit
-- [ ] Night field test with real phone: camera identify on Orion/Scorpius (photo + notes, pollution check)
+- [ ] Night field test with real phone: camera identify on Orion/Scorpius (photo + notes, pollution check). Drop the photo into `STAR_PHOTO_RAW/META` and run `src/ai/realphoto.test.ts` — same gate as CI.
 - [ ] DEV draft via `create_article(published:false)`, tag `#hf26challenge`, template + repo + demo + why-open + training proof
 - [ ] Publish in-window (due Oct 11 11:59 PM PDT), verify sticker + completion badge at `hacktoberfest.com/my`
