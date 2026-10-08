@@ -7,6 +7,7 @@ import {
   lowPass,
   lowPassAngle,
   needsRecalibration,
+  orientationReading,
   pitchFromBeta,
   trueHeading
 } from './fusion'
@@ -86,5 +87,39 @@ describe('camera pitch', () => {
     expect(pitchFromBeta(270)).toBe(90)
     expect(pitchFromBeta(null)).toBe(null)
     expect(pitchFromBeta(NaN)).toBe(null)
+  })
+})
+
+describe('orientationReading', () => {
+  it('accepts absolute alpha as compass heading', () => {
+    const r = orientationReading({ alpha: 90, beta: 135, absolute: true }, 0)
+    expect(r.magnetic).toBeCloseTo(270, 6)
+    expect(r.pitch).toBe(45)
+    expect(r.absolute).toBe(true)
+  })
+  it('rejects relative alpha (Chrome 50+ drift) but keeps gyro pitch', () => {
+    const r = orientationReading({ alpha: 90, beta: 135, absolute: false }, 0)
+    expect(r.magnetic).toBe(null)
+    expect(r.pitch).toBe(45)
+    expect(r.absolute).toBe(false)
+  })
+  it('treats missing absolute flag as relative', () => {
+    const r = orientationReading({ alpha: 200, beta: 100 }, 0)
+    expect(r.magnetic).toBe(null)
+    expect(r.pitch).toBe(10)
+  })
+  it('prefers webkitCompassHeading and removes declination', () => {
+    const r = orientationReading(
+      { alpha: 0, beta: 120, absolute: false, webkitCompassHeading: 100 },
+      10
+    )
+    expect(r.magnetic).toBeCloseTo(90, 6)
+    expect(r.absolute).toBe(true)
+  })
+  it('handles null events (blocked sensors) without crashing', () => {
+    const r = orientationReading({ alpha: null, beta: null }, 0)
+    expect(r.magnetic).toBe(null)
+    expect(r.pitch).toBe(null)
+    expect(r.absolute).toBe(false)
   })
 })

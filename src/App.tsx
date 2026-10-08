@@ -189,6 +189,9 @@ export default function App() {
           onListen={onListen}
         />
       )}
+      <footer className="px-4 pb-4 text-center text-[10px] opacity-40">
+        build {__BUILD_ID__} · compass {compass.live ? 'live' : compass.supported ? 'silent' : 'unsupported'}
+      </footer>
     </main>
   )
 }

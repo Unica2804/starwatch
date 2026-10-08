@@ -6,7 +6,7 @@ import {
   lowPass,
   lowPassAngle,
   needsRecalibration,
-  pitchFromBeta,
+  orientationReading,
   trueHeading
 } from './fusion'
 
@@ -47,31 +47,40 @@ export function useCompass(lat: number | null, lon: number | null): CompassState
   useEffect(() => {
     let dead = false
     const onOrient = (e: DeviceOrientationEvent): void => {
-      // iOS gives webkitCompassHeading (true-north already); Android gives alpha.
-      const w = e as DeviceOrientationEvent & { webkitCompassHeading?: number }
-      let magnetic: number | null = null
-      if (typeof w.webkitCompassHeading === 'number') {
-        const dec =
-          lat !== null && lon !== null ? estimateDeclination(lat, lon) : 0
-        magnetic = (((w.webkitCompassHeading - dec) % 360) + 360) % 360
-      } else if (typeof e.alpha === 'number') {
-        magnetic = ((360 - e.alpha) % 360 + 360) % 360
+      const w = e as DeviceOrientationEvent & {
+        absolute?: boolean
+        webkitCompassHeading?: number
       }
-      if (magnetic === null || dead) return
+      const dec = lat !== null && lon !== null ? estimateDeclination(lat, lon) : 0
+      const reading = orientationReading(
+        {
+          alpha: typeof e.alpha === 'number' ? e.alpha : null,
+          beta: typeof e.beta === 'number' ? e.beta : null,
+          absolute: typeof w.absolute === 'boolean' ? w.absolute : undefined,
+          webkitCompassHeading:
+            typeof w.webkitCompassHeading === 'number' ? w.webkitCompassHeading : null
+        },
+        dec
+      )
+      if (dead) return
+      // Gyro tilt is valid from any event — update it independently so the
+      // camera always knows where it points, even without a magnetometer.
+      if (reading.pitch !== null) {
+        smoothPitch.current =
+          smoothPitch.current === null
+            ? reading.pitch
+            : lowPass(smoothPitch.current, reading.pitch, ALPHA)
+        setPitch(smoothPitch.current)
+      }
+      // Compass heading only from Earth-referenced data. Relative alpha
+      // (Chrome 50+ plain deviceorientation) would corrupt the heading.
+      if (reading.magnetic === null) return
       smooth.current =
         smooth.current === null
-          ? magnetic
-          : lowPassAngle(smooth.current, magnetic, ALPHA)
-      if (!dead) {
-        setLive(true)
-        setMag(smooth.current)
-        const p = pitchFromBeta(typeof e.beta === 'number' ? e.beta : null)
-        if (p !== null) {
-          smoothPitch.current =
-            smoothPitch.current === null ? p : lowPass(smoothPitch.current, p, ALPHA)
-          setPitch(smoothPitch.current)
-        }
-      }
+          ? reading.magnetic
+          : lowPassAngle(smooth.current, reading.magnetic, ALPHA)
+      setLive(true)
+      setMag(smooth.current)
     }
     const onMag = (e: Event): void => {
       const m = e as Event & { x?: number; y?: number; z?: number }

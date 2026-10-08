@@ -4,6 +4,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // StarWatch — offline-only PWA. Android-first.
 export default defineConfig({
+  define: {
+    // Build stamp baked at deploy time — visible in the app footer so a
+    // stale service-worker cache can be told apart from a fresh deploy.
+    __BUILD_ID__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace('T', ' ')
+    )
+  },
   plugins: [
     react(),
     VitePWA({

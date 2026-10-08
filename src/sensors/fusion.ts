@@ -89,3 +89,41 @@ export function pitchFromBeta(beta: number | null): number | null {
   if (beta === null || !Number.isFinite(beta)) return null
   return Math.min(90, Math.max(0, beta - 90))
 }
+
+export interface OrientationSample {
+  alpha: number | null
+  beta: number | null
+  /** true = Earth-referenced (deviceorientationabsolute / iOS); false/undefined = relative drift */
+  absolute?: boolean
+  webkitCompassHeading?: number | null
+}
+
+export interface OrientationReading {
+  /** compass-grade magnetic heading, or null when only relative data exists */
+  magnetic: number | null
+  /** camera altitude from gyro tilt — valid from relative events too */
+  pitch: number | null
+  absolute: boolean
+}
+
+/**
+ * Split one orientation event into compass vs. gyro parts.
+ * Since Chrome 50 the plain `deviceorientation` alpha is RELATIVE
+ * (arbitrary zero, gyro+accel) — using it as a compass silently corrupts
+ * the heading whenever both event types fire. Only absolute alpha counts.
+ */
+export function orientationReading(
+  s: OrientationSample,
+  declinationEast: number
+): OrientationReading {
+  let magnetic: number | null = null
+  let absolute = false
+  if (typeof s.webkitCompassHeading === 'number') {
+    magnetic = (((s.webkitCompassHeading - declinationEast) % 360) + 360) % 360
+    absolute = true
+  } else if (s.absolute === true && typeof s.alpha === 'number') {
+    magnetic = ((360 - s.alpha) % 360 + 360) % 360
+    absolute = true
+  }
+  return { magnetic, pitch: pitchFromBeta(s.beta), absolute }
+}

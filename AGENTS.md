@@ -25,6 +25,7 @@ Offline-only pocket stargazing PWA for DEV `Hacktoberfest Open-Source AI Challen
 - Rules: `get_challenge_details(id:79)` — `full_details` authoritative. `get_knowledge_document(hacktoberfest|global-hack-week|dev-challenges)` before program questions.
 - Events: `search_mlh_events`, `get_mlh_event`, `list_my_mlh_events`.
 - Research: `search_dev_to_semantic` + `get_article_content` + `get_comments` for non-trivial choices; deliver with Community Wisdom section.
+- Debugging: when local investigation stalls (device bugs, silent sensor failures, deploy mysteries), use web search for the exact error/device/behavior before guessing. Never ship a fix for a problem you haven't reproduced or sourced.
 - Offers/skills: `list_event_offers` only after confirmed `registered/checked_in`, `claim_promo_code` only after explicit user yes (show once, never write to files). `list_event_agent_skills` before sponsor API code; run `install_command` exactly, only after approval.
 - Publishing: `create_article(published:false)` for drafts, tag `#hf26challenge`, `some_ai` disclosure.
 
