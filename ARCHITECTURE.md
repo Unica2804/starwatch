@@ -10,10 +10,13 @@ Vite 6 + React 18 + TS + vite-plugin-pwa (Workbox) + Tailwind + Canvas 2D → Re
 [GPS + Compass + Gyro + Camera]
   → [Sensor] true-north + WMM declination, |B| interference (25–65µT ok), dynamic low-pass smoothing, figure-8 recal prompt
   → [Sky Engine] astronomy-engine + catalog.json (2000 bright stars + 88 constellation lines, ~300KB) → what should be there
-  → [VLM Worker] fine-tuned Gemma 3n-E2B text head (SmolVLM2-256M fallback), ONNX quantized, WebGPU→WASM, isolated Worker → what camera sees
-  → cross-validate: ephemeris proposes, VLM disposes (no hallucinated constellations)
-  → [UI] SkyCanvas (Canvas 2D) → PocketMode (red-on-black, audio-only, 56px glove targets, 2-tap: Open→Point→Listen)
-  → [Audio] build-time text via Tinker/Gemma → cached mp3 + SpeechSynthesis offline fallback (no ElevenLabs runtime)
+  → [Detect] classical star-point detection on a 320px frame (adaptive threshold, ms, no model) → what is actually visible
+  → [Match] detections × projected positions (24px tolerance) → verified stars; hidden = washed out, unknown = planets/planes
+  → [Overlay] Canvas lines only through VISIBLE stars — haze never gets lines
+  → [VLM Worker] fine-tuned Gemma 3n-E2B text head (SmolVLM2-256M fallback), ONNX quantized, WebGPU→WASM, isolated Worker → confirms matches
+  → cross-validate: ephemeris proposes, detection verifies, VLM confirms (no hallucinated constellations)
+  → [UI] Camera (video + overlay, default) → SkyCanvas map → PocketMode (deferred voice)
+  → [Audio, deferred] build-time text via Tinker/Gemma → cached mp3 + SpeechSynthesis offline fallback (no ElevenLabs runtime)
   → [Offline] Workbox SW + IndexedDB, consent-before-200MB-download, model shards from HF (not Render, 25MB limit)
 ```
 

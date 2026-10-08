@@ -6,6 +6,10 @@
 
 ## P0 — sky data (seed done, expand before ship)
 - [ ] `catalog.json`: expand seed (43 stars + 4 line groups) → 2000 stars + 88 lines via `scripts/build-catalog.ts`
+
+## P0 — vision (detect+match+overlay done, VLM confirm pending)
+- [x] `detect.ts` (adaptive star points, 320px, <100ms) + `match.ts` (24px tolerance, hidden/unknown split) + overlay in `CameraView`
+- [ ] Live overlay tracking (currently redrawn per Identify; drift as phone moves)
 - [ ] Calibrate camera FOV per device (currently 60×40 estimate in `CameraView.tsx`)
 
 ## P0 — offline AI (pipeline done, weights pending)
