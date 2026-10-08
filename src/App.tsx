@@ -148,6 +148,15 @@ export default function App() {
           />
           {manual !== null && (
             <div className="px-4 flex flex-col gap-2">
+              {compass.live && (
+                <button
+                  type="button"
+                  onClick={() => setManual(null)}
+                  className="min-h-touch rounded-xl bg-night-red text-black font-bold"
+                >
+                  Compass is live — use compass
+                </button>
+              )}
               <label className="text-xs opacity-70">
                 Heading {Math.round(manual)}°
                 <input
