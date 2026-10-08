@@ -3,6 +3,7 @@ import { useCamera } from '../sensors/useCamera'
 import { crossValidate } from '../ai/crossValidate'
 import { detectStars } from '../ai/detect'
 import { matchDetections, type MatchResult } from '../ai/match'
+import { groupMatches } from '../ai/identify'
 import { identify } from '../ai/vlm.worker'
 import type { StarPosition } from '../sky/engine'
 import catalog from '../sky/catalog.json'
@@ -27,20 +28,6 @@ const V_FOV = 40
 const DETECT_W = 320
 
 const LINES = catalog.lines as { constellation: string; pairs: string[][] }[]
-
-function groupVisible(matches: MatchResult['matches']): { constellation: string; names: string[] }[] {
-  const groups = new Map<string, string[]>()
-  for (const m of matches) {
-    const key = m.star.constellation ?? 'Unknown'
-    const g = groups.get(key)
-    if (g) g.push(m.star.name)
-    else groups.set(key, [m.star.name])
-  }
-  return [...groups.entries()]
-    .map(([constellation, names]) => ({ constellation, names }))
-    .sort((a, b) => b.names.length - a.names.length)
-    .slice(0, 3)
-}
 
 /** Camera-first identification: frame + compass + GPS → what's in view. */
 export function CameraView({ heading, pitch, positioned }: Props) {
@@ -136,7 +123,7 @@ export function CameraView({ heading, pitch, positioned }: Props) {
       void identify({ pixels, width: scratch.width, height: scratch.height }).then((ai) => {
         // VLM may only confirm matched constellations (none claimed pre-fine-tune).
         const confirmed = crossValidate(
-          groupVisible(matched.matches).map((g) => ({
+          groupMatches(matched.matches).map((g) => ({
             constellation: g.constellation,
             stars: g.names
           })),
@@ -152,7 +139,7 @@ export function CameraView({ heading, pitch, positioned }: Props) {
     }
   }
 
-  const visible = result ? groupVisible(result.matches) : []
+  const visible = result ? groupMatches(result.matches) : []
 
   return (
     <section className="flex flex-col min-h-[70vh]">

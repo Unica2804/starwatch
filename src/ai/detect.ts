@@ -33,40 +33,67 @@ export function detectStars(
   const n = width * height
   if (data.length < n * 4 || n === 0) return []
 
-  // Pass 1: luminance + mean/std for an adaptive threshold that survives
-  // city glow (bright background raises the bar instead of flooding output).
-  let sum = 0
-  let sumSq = 0
+  // Pass 1: luminance.
   const lum = new Float32Array(n)
   for (let i = 0; i < n; i++) {
     const r = data[i * 4] ?? 0
     const g = data[i * 4 + 1] ?? 0
     const b = data[i * 4 + 2] ?? 0
-    const l = (0.2126 * r + 0.5872 * g + 0.1142 * b) / 255
-    lum[i] = l
-    sum += l
-    sumSq += l * l
+    lum[i] = (0.2126 * r + 0.5872 * g + 0.1142 * b) / 255
+  }
+
+  // Pass 2: subtract the slow background (city glow, airglow, Earth limb)
+  // via a box-blurred background map, so gradients can't flood the output.
+  // Integral image keeps it O(n).
+  const w = width
+  const h = height
+  const sat = new Float64Array((w + 1) * (h + 1))
+  for (let y = 0; y < h; y++) {
+    let row = 0
+    for (let x = 0; x < w; x++) {
+      row += lum[y * w + x] ?? 0
+      sat[(y + 1) * (w + 1) + (x + 1)] = (sat[y * (w + 1) + (x + 1)] ?? 0) + row
+    }
+  }
+  const R = 12
+  const box = (x0: number, y0: number, x1: number, y1: number): number => {
+    const a = sat[y0 * (w + 1) + x0] ?? 0
+    const b = sat[y0 * (w + 1) + (x1 + 1)] ?? 0
+    const c = sat[(y1 + 1) * (w + 1) + x0] ?? 0
+    const d = sat[(y1 + 1) * (w + 1) + (x1 + 1)] ?? 0
+    return (d - b - c + a) / ((x1 - x0 + 1) * (y1 - y0 + 1))
+  };
+  const sig = new Float32Array(n)
+  let sum = 0
+  let sumSq = 0
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const bg = box(Math.max(0, x - R), Math.max(0, y - R), Math.min(w - 1, x + R), Math.min(h - 1, y + R))
+      const s = Math.max(0, (lum[y * w + x] ?? 0) - bg)
+      sig[y * w + x] = s
+      sum += s
+      sumSq += s * s
+    }
   }
   const mean = sum / n
   const std = Math.sqrt(Math.max(0, sumSq / n - mean * mean))
-  // Flat frame (covered lens, pure haze): no variance, no stars.
-  if (std < 1e-6) return []
+  // Flat frame (covered lens): no variance, no stars.
+  if (std < 1e-9) return []
   const threshold = mean + sigmaFactor * std
 
-  // Pass 2: local maxima above threshold (3x3 neighborhood).
-  const w = width
+  // Pass 3: local maxima above threshold (3x3 neighborhood).
   interface Cand { x: number; y: number; l: number }
   const cands: Cand[] = []
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const i = y * w + x
-      const l = lum[i] ?? 0
+      const l = sig[i] ?? 0
       if (l < threshold) continue
       let peak = true
       for (let dy = -1; dy <= 1 && peak; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx === 0 && dy === 0) continue
-          if ((lum[(y + dy) * w + (x + dx)] ?? 0) > l) {
+          if ((sig[(y + dy) * w + (x + dx)] ?? 0) > l) {
             peak = false
             break
           }

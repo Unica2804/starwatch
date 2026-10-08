@@ -45,4 +45,20 @@ describe('crossValidate', () => {
     expect(r.verified).toEqual([])
     expect(r.rejected).toEqual([])
   })
+
+  it('rejects a 0.99-confidence fake and a whole sky of fakes', () => {
+    const r = crossValidate(EPHEMERIS, [
+      { label: 'Ursa Major', confidence: 0.99 },
+      { label: 'Cassiopeia', confidence: 0.99 },
+      { label: 'Scorpius', confidence: 0.51 }
+    ])
+    expect(r.verified.map((c) => c.label)).toEqual(['Scorpius'])
+    expect(r.rejected.map((c) => c.label).sort()).toEqual(['Cassiopeia', 'Ursa Major'])
+  })
+
+  it('rejects everything when ephemeris proposes nothing (daylight frame)', () => {
+    const r = crossValidate([], [{ label: 'Orion', confidence: 0.99 }])
+    expect(r.verified).toEqual([])
+    expect(r.rejected.length).toBe(1)
+  })
 })
