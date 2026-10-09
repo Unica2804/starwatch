@@ -108,7 +108,7 @@ export default function App() {
       </nav>
 
       {tab === 'camera' && (
-        <CameraView heading={heading} pitch={compass.pitch} positioned={positioned} />
+        <CameraView heading={heading} pitch={compass.pitch} positioned={positioned} onRequestMap={() => setTab('map')} />
       )}
 
       {tab === 'map' && (

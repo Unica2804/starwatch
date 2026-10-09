@@ -12,6 +12,8 @@ interface Props {
   heading: number | null
   pitch: number | null
   positioned: readonly StarPosition[]
+  /** city haze: offer the sky-map fallback instead of an empty result */
+  onRequestMap?: () => void
 }
 
 interface Result extends MatchResult {
@@ -30,7 +32,7 @@ const DETECT_W = 320
 const LINES = catalog.lines as { constellation: string; pairs: string[][] }[]
 
 /** Camera-first identification: frame + compass + GPS → what's in view. */
-export function CameraView({ heading, pitch, positioned }: Props) {
+export function CameraView({ heading, pitch, positioned, onRequestMap }: Props) {
   const { stream, error, loading, retry } = useCamera(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
@@ -182,11 +184,22 @@ export function CameraView({ heading, pitch, positioned }: Props) {
       {result && (
         <div className="mx-4 mt-3 rounded-xl border border-night-dim p-4">
           {visible.length === 0 ? (
-            <p className="text-sm text-center">
-              {result.detected === 0
-                ? 'No stars detected — covered lens, daylight, or total cloud. The overlay stays empty rather than guessing.'
-                : `${result.detected} lights found but none match the catalog here — planets, planes, or compass error.`}
-            </p>
+            <div className="text-center">
+              <p className="text-sm">
+                {result.detected === 0
+                  ? 'No stars detected — covered lens, daylight, or heavy light pollution. The overlay stays empty rather than guessing.'
+                  : `${result.detected} lights found but none match the catalog here — planets, planes, or compass error.`}
+              </p>
+              {result.detected === 0 && onRequestMap && (
+                <button
+                  type="button"
+                  onClick={onRequestMap}
+                  className="mt-3 min-h-touch w-full rounded-xl border-2 border-night-red text-night-red font-bold"
+                >
+                  🗺 Too hazy — open the star map
+                </button>
+              )}
+            </div>
           ) : (
             <ul className="flex flex-col gap-2">
               {visible.map((g) => (
