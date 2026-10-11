@@ -1,24 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { playNarration } from './audio/player'
 import { useCompass } from './sensors/useCompass'
 import { useLocation } from './sensors/useLocation'
 import catalog from './sky/catalog.json'
 import { visibleStars, type Star } from './sky/engine'
 import { CameraView } from './ui/CameraView'
 import { effectiveHeading, shouldOfferManual } from './ui/heading'
-import { PocketMode } from './ui/PocketMode'
 import { SkyCanvas } from './ui/SkyCanvas'
 
-const NARRATION: Record<string, string> = {
-  Scorpius:
-    "Face south. Antares burns red at the scorpion's heart. Trace right to Sargas, then down to Shaula's sting.",
-  Orion:
-    'Three belt stars in a short straight line. Above left glows red Betelgeuse; below right burns blue Rigel.',
-  'Ursa Major':
-    'Seven dipper stars pour a long ladle. Follow the two pointers away from the cup to Polaris.'
-}
-
-type Tab = 'camera' | 'map' | 'pocket'
+type Tab = 'camera' | 'map'
 
 export default function App() {
   const loc = useLocation()
@@ -46,13 +35,6 @@ export default function App() {
   const offerManual = shouldOfferManual(compass.live, compass.supported, waitedMs)
 
   const top = positioned[0] ?? null
-  const narration = top
-    ? (NARRATION[top.constellation ?? ''] ?? `Overhead now: ${top.name}, magnitude ${top.mag}. Let your eyes rest soft.`)
-    : 'Get a GPS fix, then point your phone at the sky.'
-
-  const onListen = (): void => {
-    void playNarration({ url: null, text: narration, audio: null })
-  }
 
   if (loc.lat === null || loc.lon === null) {
     return (
@@ -76,8 +58,7 @@ export default function App() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'camera', label: '📷 Sky' },
-    { id: 'map', label: '🗺 Map' },
-    { id: 'pocket', label: '📴 Listen' }
+    { id: 'map', label: '🗺 Map' }
   ]
 
   return (
@@ -191,15 +172,6 @@ export default function App() {
         </>
       )}
 
-      {tab === 'pocket' && (
-        <PocketMode
-          heading={heading}
-          topConstellation={top?.constellation ?? null}
-          narration={narration}
-          audioUrl={null}
-          onListen={onListen}
-        />
-      )}
       <footer className="px-4 pb-4 text-center text-[10px] opacity-40">
         build {__BUILD_ID__} · compass {compass.live ? 'live' : compass.supported ? 'silent' : 'unsupported'}
       </footer>
