@@ -12,10 +12,9 @@
 - [ ] Live overlay tracking (currently redrawn per Identify; drift as phone moves)
 - [ ] Calibrate camera FOV per device (currently 60×40 estimate in `CameraView.tsx`)
 
-## P0 — offline AI (pipeline done, weights pending)
-- [ ] Dataset: expand `data/narration.seed.jsonl` (12) → 60–80 JSONL + `narration.holdout.jsonl` (10), human-reviewed, MIT
-- [ ] Tinker LoRA fine-tune (r=8, 1–2 epochs, seq 512), save log + model card
-- [ ] Export Q4 ONNX/LiteRT → HF → wire weights into `vlm.worker.ts` (stub = ephemeris-only now)
+## P0 — offline AI (Week 1 scope: pipeline without weights)
+- [x] Detection + match + overlay + hallucination harness (synthetic + real-photon gates green)
+- [ ] DEFERRED (no VLM claims entered): dataset 60–80, Tinker LoRA run, Q4 export → HF → wire weights. Week 2+.
 
 ## P0 — ship
 - [x] Render Static live: https://starwatch.onrender.com (auto-deploys from main)
