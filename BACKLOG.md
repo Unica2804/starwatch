@@ -14,7 +14,8 @@
 
 ## P0 — offline AI (Week 1 scope: pipeline without weights)
 - [x] Detection + match + overlay + hallucination harness (synthetic + real-photon gates green)
-- [ ] DEFERRED (no VLM claims entered): dataset 60–80, Tinker LoRA run, Q4 export → HF → wire weights. Week 2+.
+- [x] VLM spike (Oct 11): Florence-2 q4 captions generic only; SigLIP zero-shot prompt-fragile (Scorpius 0.354 > Orion 0.221 on Orion photo) — REJECTED for tonight, no AI-track claims
+- [ ] DEFERRED: dataset 60–80, Tinker LoRA run, Q4 export → HF → wire weights. Week 2+.
 
 ## P0 — ship
 - [x] Render Static live: https://starwatch.onrender.com (auto-deploys from main)
